@@ -493,6 +493,9 @@ export function DocumentEditor({
                           onChange={(patch) => updateItem(item.id, patch)}
                           onRemove={() => removeItem(item.id)}
                           onInsertAfter={() => insertItemAfter(item.id)}
+                          unitPriceZeroPlaceholder={
+                            type === "estimate" ? "000" : undefined
+                          }
                         />
                       );
                     })}
@@ -1330,28 +1333,39 @@ function NumericInput({
   onChange,
   allowDecimal = false,
   className,
+  zeroPlaceholder,
 }: {
   value: number;
   onChange: (n: number) => void;
   allowDecimal?: boolean;
   className?: string;
+  zeroPlaceholder?: string;
 }) {
-  const [text, setText] = useState<string>(String(value));
+  const display = (n: number) =>
+    n === 0 && zeroPlaceholder ? zeroPlaceholder : String(n);
+  const [text, setText] = useState<string>(display(value));
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    if (!focused) setText(String(value));
-  }, [value, focused]);
+    if (!focused) setText(display(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, focused, zeroPlaceholder]);
 
   return (
     <input
       type="text"
       inputMode={allowDecimal ? "decimal" : "numeric"}
       value={text}
-      onFocus={() => setFocused(true)}
+      onFocus={(e) => {
+        setFocused(true);
+        if (value === 0 && zeroPlaceholder) {
+          setText("");
+          requestAnimationFrame(() => e.target.select());
+        }
+      }}
       onBlur={() => {
         setFocused(false);
-        setText(String(value));
+        setText(display(value));
       }}
       onChange={(e) => {
         const normalized = toHalfWidthNumber(e.target.value);
@@ -1379,12 +1393,14 @@ function SortableItemRow({
   onChange,
   onRemove,
   onInsertAfter,
+  unitPriceZeroPlaceholder,
 }: {
   item: DocumentItem;
   subtotalAmount: number;
   onChange: (patch: Partial<DocumentItem>) => void;
   onRemove: () => void;
   onInsertAfter: () => void;
+  unitPriceZeroPlaceholder?: string;
 }) {
   const {
     attributes,
@@ -1546,6 +1562,7 @@ function SortableItemRow({
       <NumericInput
         value={item.unitPrice}
         onChange={(n) => onChange({ unitPrice: n })}
+        zeroPlaceholder={unitPriceZeroPlaceholder}
         className="block w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-right text-sm tabular-nums text-foreground hover:border-border focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary-soft"
       />
       <div className="text-right text-sm font-semibold tabular-nums text-foreground">
