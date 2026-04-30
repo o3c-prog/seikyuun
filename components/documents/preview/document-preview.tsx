@@ -280,7 +280,7 @@ export function DocumentPreview({
             </tbody>
           </table>
 
-          <div className="mt-2 flex items-stretch border-2 border-gray-400">
+          <div className="mt-2 flex items-stretch border-2 border-black">
             <div className="flex w-24 items-center justify-center bg-gray-900 px-2 py-1.5 text-[11px] font-semibold text-white">
               合計金額
             </div>
