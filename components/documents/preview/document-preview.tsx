@@ -184,7 +184,7 @@ export function DocumentPreview({
             .join(""),
         ],
         tel: client?.tel,
-        fax: client?.fax,
+        fax: undefined as string | undefined,
         contactPerson: undefined as string | undefined,
       };
 
@@ -199,7 +199,7 @@ export function DocumentPreview({
             .join(""),
         ],
         tel: client?.tel,
-        fax: client?.fax,
+        fax: undefined as string | undefined,
         contactPerson: undefined as string | undefined,
         registrationNumber: undefined as string | undefined,
       }

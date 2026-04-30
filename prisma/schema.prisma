@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema for セイキューン!
+// docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,130 +10,130 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ───────── Client (顧客) ─────────
 model Client {
-  id             String    @id @default(uuid())
-  userId         String    @map("user_id")
-  name           String
-  shortName      String    @map("short_name")
-  honorific      String    @default("御中")
-  postalCode     String?   @map("postal_code")
-  address        String?
-  tel            String?
-  fax            String?
-  email          String?
-  contactName    String?   @map("contact_name")
-  contactDept    String?   @map("contact_dept")
-  paymentTerms   String?   @map("payment_terms")
-  bankAccountId  String?   @map("bank_account_id")
-  sendMethod     String    @default("email") @map("send_method")
-  invoiceNumber  String?   @map("invoice_number")
-  notes          String?
-  isArchived     Boolean   @default(false) @map("is_archived")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id                        String   @id @default(uuid())
+  name                      String
+  honorific                 String   @default("御中")
+  postalCode                String?  @map("postal_code")
+  prefecture                String?
+  city                      String?
+  building                  String?
+  tel                       String?
+  contacts                  Json?    // [{ name: string; email: string }]
+  defaultPaymentTerms       String?  @map("default_payment_terms")
+  feeBearer                 String   @default("client") @map("fee_bearer") // client | self
+  sendMethod                String   @default("post") @map("send_method")  // mail | post | mail_and_post
+  bankAccountId             String?  @map("bank_account_id")
+  clientNumber              String?  @map("client_number")
+  corporateNumber           String?  @map("corporate_number")
+  invoiceEligibility        String   @default("unset") @map("invoice_eligibility") // unset | eligible | not_eligible
+  invoiceRegistrationNumber String?  @map("invoice_registration_number")
+  notes                     String?
+  tags                      String[] @default([])
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
 
-  projects       Project[]
-  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+  projects                  Project[]
 
   @@map("clients")
 }
 
+// ───────── Project (案件) ─────────
 model Project {
-  id             String    @id @default(uuid())
-  userId         String    @map("user_id")
-  clientId       String    @map("client_id")
-  name           String
-  contactName    String?   @map("contact_name")
-  orderStatus    String    @default("estimate_mid") @map("order_status")
-  invoiceTiming  String    @default("single") @map("invoice_timing")
-  invoiceDate    DateTime? @map("invoice_date") @db.Date
-  paymentDueDate DateTime? @map("payment_due_date") @db.Date
-  paymentTerms   String?   @map("payment_terms")
-  bankAccountId  String?   @map("bank_account_id")
-  categoryTag    String?   @map("category_tag")
-  internalMemo   String?   @map("internal_memo")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id                  String   @id @default(uuid())
+  projectNumber       String   @unique @map("project_number")
+  clientId            String   @map("client_id")
+  name                String
+  orderStatus         String   @default("estimating") @map("order_status") // estimating | ordered | lost
+  invoiceTiming       String   @default("single") @map("invoice_timing")   // single | recurring | split
+  invoiceDate         String?  @map("invoice_date")
+  splitInvoiceDates   String[] @default([]) @map("split_invoice_dates")
+  recurringInterval   String?  @map("recurring_interval") // weekly | monthly | bimonthly | quarterly | yearly
+  recurringNotify     Boolean? @map("recurring_notify")
+  recurringAutoRenew  Boolean? @map("recurring_auto_renew")
+  deliveryDate        String?  @map("delivery_date")
+  syncDeliveryDate    Boolean? @map("sync_delivery_date")
+  paymentTerms        String?  @map("payment_terms")
+  paymentMethod       String   @default("bank_transfer") @map("payment_method")
+  progress            String   @default("not_started")
+  rounding            String   @default("floor")
+  internalMemo        String?  @map("internal_memo")
+  estimateAmount      Int      @default(0) @map("estimate_amount")
+  invoiceAmount       Int      @default(0) @map("invoice_amount")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
-  client         Client    @relation(fields: [clientId], references: [id])
-  documents      Document[]
-  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+  client              Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  documents           Document[]
+  branches            EstimateBranch[]
 
   @@map("projects")
 }
 
+// ───────── Document (見積/請求/etc 書類) ─────────
 model Document {
-  id              String    @id @default(uuid())
-  projectId       String    @map("project_id")
-  userId          String    @map("user_id")
-  docType         String    @map("doc_type")  // estimate / invoice / receipt
-  docNumber       String    @map("doc_number")
-  issuedAt        DateTime  @map("issued_at") @db.Date
-  dueDate         DateTime? @map("due_date") @db.Date
-  subject         String?
+  id              String   @id @default(uuid())
+  projectId       String   @map("project_id")
+  type            String   // estimate | purchase-order | delivery | invoice | receipt | cover-letter
+  documentNumber  String   @map("document_number")
+  subject         String   @default("")
+  primaryDate     String?  @map("primary_date")
+  secondaryDate   String?  @map("secondary_date")
   notes           String?
-  clientSnapshot  Json      @map("client_snapshot")
-  subtotal        Int       @default(0)
-  taxAmount       Int       @default(0)
-  totalAmount     Int       @default(0)
-  withholdingTax  Int       @default(0) @map("withholding_tax")
-  invoiceStatus   String    @default("draft") @map("invoice_status") // draft / sent / paid
-  sentAt          DateTime? @map("sent_at")
-  paidAt          DateTime? @map("paid_at") @db.Date
-  invoiceEligible Boolean   @default(true) @map("invoice_eligible")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  status          String   @default("draft") // draft | issued
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  project         Project   @relation(fields: [projectId], references: [id])
-  groups          DocumentGroup[]
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   items           DocumentItem[]
 
+  @@unique([projectId, type])
   @@map("documents")
 }
 
-model DocumentGroup {
-  id          String    @id @default(uuid())
-  documentId  String    @map("document_id")
-  name        String
-  sortOrder   Int       @map("sort_order")
-
-  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  items       DocumentItem[]
-
-  @@map("document_groups")
-}
-
 model DocumentItem {
-  id          String    @id @default(uuid())
-  documentId  String    @map("document_id")
-  groupId     String?   @map("group_id")
-  name        String
-  quantity    Decimal   @default(1)
-  unit        String    @default("式")
-  unitPrice   Int       @map("unit_price")
-  taxRate     Int       @default(10) @map("tax_rate")
-  amount      Int
+  id          String   @id @default(uuid())
+  documentId  String   @map("document_id")
+  rowType     String   @default("normal") @map("row_type") // normal | heading | subtotal
+  name        String   @default("")
+  quantity    Decimal  @default(1) @db.Decimal(12, 2)
+  unitPrice   Int      @default(0) @map("unit_price")
+  taxRate     Int      @default(10) @map("tax_rate") // 0 | 8 | 10
   notes       String?
-  sortOrder   Int       @map("sort_order")
+  sortOrder   Int      @map("sort_order")
 
-  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  group       DocumentGroup? @relation(fields: [groupId], references: [id])
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("document_items")
 }
 
-model BankAccount {
-  id            String    @id @default(uuid())
-  userId        String    @map("user_id")
-  bankName      String    @map("bank_name")
-  branchName    String?   @map("branch_name")
-  accountType   String?   @map("account_type")
-  accountNumber String?   @map("account_number")
-  accountName   String?   @map("account_name")
-  isDefault     Boolean   @default(false) @map("is_default")
+// ───────── EstimateBranch (見積の別パターン) ─────────
+model EstimateBranch {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  name          String
+  items         Json     // DocumentItem[] (snapshot)
+  notes         String?
+  subject       String?
+  primaryDate   String?  @map("primary_date")
+  secondaryDate String?  @map("secondary_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  clients       Client[]
-  projects      Project[]
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@map("bank_accounts")
+  @@map("estimate_branches")
+}
+
+// ───────── DocumentTemplate (書類テンプレート) ─────────
+model DocumentTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  type      String   // estimate | invoice | etc
+  items     Json     // DocumentItem[] (snapshot)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("document_templates")
 }
