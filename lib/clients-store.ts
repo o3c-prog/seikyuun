@@ -2,143 +2,82 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { Client, ClientInput } from "./types";
-import { mockClients } from "./mock-data";
 
-const STORAGE_KEY = "invoice-app:clients";
+const EVENT = "clients-updated";
 
-function loadClients(): Client[] {
-  if (typeof window === "undefined") return mockClients;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mockClients));
-    return mockClients;
-  }
-  try {
-    const parsed = JSON.parse(raw) as Array<Client & {
-      shortName?: string;
-      fax?: string;
-      email?: string;
-      ndaSigned?: boolean;
-      basicContractSigned?: boolean;
-    }>;
-    let changed = false;
-    const migrated: Client[] = parsed.map((c) => {
-      const next: Client & {
-        shortName?: string;
-        fax?: string;
-        email?: string;
-        ndaSigned?: boolean;
-        basicContractSigned?: boolean;
-      } = { ...c };
-      if ((next.sendMethod as string) === "download") {
-        next.sendMethod = "mail";
-        changed = true;
-      }
-      // If legacy email exists and contacts is missing, seed contacts
-      if (!next.contacts && next.email) {
-        next.contacts = [{ name: "", email: next.email }];
-        changed = true;
-      }
-      // Drop deprecated fields
-      if (next.shortName !== undefined) {
-        delete next.shortName;
-        changed = true;
-      }
-      if (next.fax !== undefined) {
-        delete next.fax;
-        changed = true;
-      }
-      if (next.email !== undefined) {
-        delete next.email;
-        changed = true;
-      }
-      if (next.ndaSigned !== undefined) {
-        delete next.ndaSigned;
-        changed = true;
-      }
-      if (next.basicContractSigned !== undefined) {
-        delete next.basicContractSigned;
-        changed = true;
-      }
-      return next as Client;
-    });
-    if (changed) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-    }
-    return migrated;
-  } catch {
-    return mockClients;
-  }
-}
-
-function saveClients(clients: Client[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
-  window.dispatchEvent(new CustomEvent("clients-updated"));
-}
-
-function generateId(): string {
-  return `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+async function fetchClients(): Promise<Client[]> {
+  const r = await fetch("/api/clients", { cache: "no-store" });
+  if (!r.ok) throw new Error("failed to fetch clients");
+  return r.json();
 }
 
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  const reload = useCallback(async () => {
+    try {
+      setClients(await fetchClients());
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
-    setClients(loadClients());
-    setHydrated(true);
-    const onUpdate = () => setClients(loadClients());
-    window.addEventListener("clients-updated", onUpdate);
-    window.addEventListener("storage", onUpdate);
+    let mounted = true;
+    fetchClients()
+      .then((list) => {
+        if (mounted) {
+          setClients(list);
+          setHydrated(true);
+        }
+      })
+      .catch(() => {
+        if (mounted) setHydrated(true);
+      });
+    const onUpdate = () => reload();
+    window.addEventListener(EVENT, onUpdate);
     return () => {
-      window.removeEventListener("clients-updated", onUpdate);
-      window.removeEventListener("storage", onUpdate);
+      mounted = false;
+      window.removeEventListener(EVENT, onUpdate);
     };
+  }, [reload]);
+
+  const create = useCallback(async (input: ClientInput): Promise<Client> => {
+    const r = await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!r.ok) throw new Error("failed to create client");
+    const created = (await r.json()) as Client;
+    setClients((prev) => [created, ...prev]);
+    window.dispatchEvent(new CustomEvent(EVENT));
+    return created;
   }, []);
 
-  const create = useCallback((input: ClientInput): Client => {
-    const now = new Date().toISOString();
-    const next: Client = {
-      ...input,
-      id: generateId(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    const list = loadClients();
-    saveClients([next, ...list]);
-    return next;
+  const update = useCallback(
+    async (id: string, input: Partial<ClientInput>): Promise<Client | null> => {
+      const r = await fetch(`/api/clients/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!r.ok) return null;
+      const updated = (await r.json()) as Client;
+      setClients((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      window.dispatchEvent(new CustomEvent(EVENT));
+      return updated;
+    },
+    []
+  );
+
+  const remove = useCallback(async (id: string): Promise<void> => {
+    const r = await fetch(`/api/clients/${id}`, { method: "DELETE" });
+    if (!r.ok) return;
+    setClients((prev) => prev.filter((c) => c.id !== id));
+    window.dispatchEvent(new CustomEvent(EVENT));
   }, []);
 
-  const update = useCallback((id: string, input: Partial<ClientInput>): Client | null => {
-    const list = loadClients();
-    const idx = list.findIndex((c) => c.id === id);
-    if (idx === -1) return null;
-    const next: Client = {
-      ...list[idx],
-      ...input,
-      updatedAt: new Date().toISOString(),
-    };
-    const newList = [...list];
-    newList[idx] = next;
-    saveClients(newList);
-    return next;
-  }, []);
-
-  const remove = useCallback((id: string) => {
-    const list = loadClients();
-    saveClients(list.filter((c) => c.id !== id));
-  }, []);
-
-  const reset = useCallback(() => {
-    saveClients(mockClients);
-  }, []);
-
-  return { clients, hydrated, create, update, remove, reset };
-}
-
-export function getClientById(id: string): Client | null {
-  if (typeof window === "undefined") return null;
-  const list = loadClients();
-  return list.find((c) => c.id === id) ?? null;
+  return { clients, hydrated, create, update, remove };
 }

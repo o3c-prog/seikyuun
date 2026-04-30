@@ -35,12 +35,11 @@ export type Client = {
   invoiceRegistrationNumber?: string;
   notes?: string;
   tags: string[];
-  isArchived?: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
-export type ClientInput = Omit<Client, "id" | "createdAt" | "updatedAt" | "isArchived">;
+export type ClientInput = Omit<Client, "id" | "createdAt" | "updatedAt">;
 
 export type OrderStatus = "estimating" | "ordered" | "lost";
 

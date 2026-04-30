@@ -52,10 +52,7 @@ export default function ProjectsPage() {
     return map;
   }, [clients]);
 
-  const activeClients = useMemo(
-    () => clients.filter((c) => !c.isArchived),
-    [clients]
-  );
+  const activeClients = clients;
 
   const filtered = useMemo(() => {
     const nameK = nameKeyword.trim().toLowerCase();

@@ -229,15 +229,15 @@ export function DocumentEditor({
     window.open(`/print/${project.id}/${preset}`, "_blank", "noopener,noreferrer");
   };
 
-  const handleIssueAndPrintSelf = () => {
-    save({ ...draft, status: "issued" });
+  const handleIssueAndPrintSelf = async () => {
+    await save({ ...draft, status: "issued" });
     toast.success(`${DOCUMENT_TYPE_LABELS[type]}を発行しました`);
     openPrintPreset(type);
   };
 
-  const handleIssueEstimateAndPo = () => {
-    save({ ...draft, status: "issued" });
-    const ok = copyAndIssueDocument(project.id, type, "purchase-order");
+  const handleIssueEstimateAndPo = async () => {
+    await save({ ...draft, status: "issued" });
+    const ok = await copyAndIssueDocument(project.id, type, "purchase-order");
     if (ok) {
       toast.success("見積書と発注書を発行しました");
     } else {
@@ -246,9 +246,9 @@ export function DocumentEditor({
     openPrintPreset("estimate-po");
   };
 
-  const handleIssueEstimatePoAndAck = () => {
-    save({ ...draft, status: "issued" });
-    const ok = copyAndIssueDocument(project.id, type, "purchase-order");
+  const handleIssueEstimatePoAndAck = async () => {
+    await save({ ...draft, status: "issued" });
+    const ok = await copyAndIssueDocument(project.id, type, "purchase-order");
     if (ok) {
       toast.success("見積書、発注書、発注請書を発行しました");
     } else {
@@ -257,8 +257,8 @@ export function DocumentEditor({
     openPrintPreset("estimate-po-ack");
   };
 
-  const handleIssueWithPreset = (preset: string, message: string) => {
-    save({ ...draft, status: "issued" });
+  const handleIssueWithPreset = async (preset: string, message: string) => {
+    await save({ ...draft, status: "issued" });
     toast.success(message);
     openPrintPreset(preset);
   };
@@ -300,7 +300,7 @@ export function DocumentEditor({
     return [];
   })();
 
-  const handleSave = (status: "draft" | "issued" = draft.status) => {
+  const handleSave = async (status: "draft" | "issued" = draft.status) => {
     if (isOnBranch && currentBranchId) {
       updateBranch(currentBranchId, {
         items: draft.items,
@@ -312,7 +312,7 @@ export function DocumentEditor({
       toast.success(`ブランチ「${currentBranch?.name}」を保存しました`);
       return;
     }
-    save({ ...draft, status });
+    await save({ ...draft, status });
     toast.success(status === "issued" ? "発行しました" : "保存しました");
   };
 
@@ -326,9 +326,9 @@ export function DocumentEditor({
     toast.success(`ブランチ「${name}」を作成しました`);
   };
 
-  const handlePromoteToMain = () => {
+  const handlePromoteToMain = async () => {
     if (!currentBranch) return;
-    save({
+    await save({
       ...draft,
       items: draft.items.map((it) => ({ ...it })),
     });
@@ -346,8 +346,8 @@ export function DocumentEditor({
     toast.success(`ブランチ「${name}」を削除しました`);
   };
 
-  const handleSavePropagate = () => {
-    save({ ...draft, status: draft.status });
+  const handleSavePropagate = async () => {
+    await save({ ...draft, status: draft.status });
     const others: DocumentType[] = (
       [
         "estimate",
@@ -360,35 +360,15 @@ export function DocumentEditor({
     ).filter((t) => t !== type);
     let okCount = 0;
     for (const t of others) {
-      const ok = copyItemsBetweenDocuments(project.id, type, project.id, t);
+      const ok = await copyItemsBetweenDocuments(project.id, type, project.id, t);
       if (ok) okCount += 1;
     }
     toast.success(`保存しました（他${okCount}件の書類にも明細を反映）`);
   };
 
-  const handleCopyFromEstimate = () => {
-    // Save current draft first so dates/subject/etc. aren't lost
-    save({ ...draft });
-
-    // Check the source estimate explicitly to give a useful error message
-    const allDocs = JSON.parse(
-      window.localStorage.getItem("invoice-app:documents") ?? "[]"
-    ) as Document[];
-    const estimateDoc = allDocs.find(
-      (d) => d.projectId === project.id && d.type === "estimate"
-    );
-    if (!estimateDoc) {
-      toast.error(
-        "見積書がまだ作成されていません。先に見積書タブで明細を保存してください。"
-      );
-      return;
-    }
-    if (estimateDoc.items.length === 0) {
-      toast.error("見積書に明細がありません。");
-      return;
-    }
-
-    const ok = copyItemsBetweenDocuments(
+  const handleCopyFromEstimate = async () => {
+    await save({ ...draft });
+    const ok = await copyItemsBetweenDocuments(
       project.id,
       "estimate",
       project.id,
@@ -397,7 +377,9 @@ export function DocumentEditor({
     if (ok) {
       toast.success("見積書から明細・備考をコピーしました");
     } else {
-      toast.error("コピーに失敗しました");
+      toast.error(
+        "見積書に明細がありません。先に見積書タブで明細を保存してください。"
+      );
     }
   };
 

@@ -2,113 +2,81 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { Project, ProjectInput } from "./types";
-import { mockProjects } from "./mock-data";
 
-const STORAGE_KEY = "invoice-app:projects";
+const EVENT = "projects-updated";
 
-const LEGACY_ORDER_STATUS_MAP: Record<string, Project["orderStatus"]> = {
-  estimate_high: "estimating",
-  estimate_mid: "estimating",
-  estimate_low: "estimating",
-  estimate_excluded: "estimating",
-  confirmed: "ordered",
-};
-
-function migrate(p: Project): Project {
-  const legacy = LEGACY_ORDER_STATUS_MAP[p.orderStatus as string];
-  if (legacy) {
-    return { ...p, orderStatus: legacy };
-  }
-  return p;
-}
-
-function loadProjects(): Project[] {
-  if (typeof window === "undefined") return mockProjects;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mockProjects));
-    return mockProjects;
-  }
-  try {
-    const parsed = JSON.parse(raw) as Project[];
-    const migrated = parsed.map(migrate);
-    if (migrated.some((p, i) => p.orderStatus !== parsed[i].orderStatus)) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-    }
-    return migrated;
-  } catch {
-    return mockProjects;
-  }
-}
-
-function saveProjects(projects: Project[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-  window.dispatchEvent(new CustomEvent("projects-updated"));
-}
-
-function generateId(): string {
-  return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function nextProjectNumber(projects: Project[]): string {
-  const numbers = projects
-    .map((p) => parseInt(p.projectNumber, 10))
-    .filter((n) => !Number.isNaN(n));
-  const max = numbers.length > 0 ? Math.max(...numbers) : 22614;
-  return String(max + 1);
+async function fetchProjects(): Promise<Project[]> {
+  const r = await fetch("/api/projects", { cache: "no-store" });
+  if (!r.ok) throw new Error("failed to fetch projects");
+  return r.json();
 }
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  const reload = useCallback(async () => {
+    try {
+      setProjects(await fetchProjects());
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
-    setProjects(loadProjects());
-    setHydrated(true);
-    const onUpdate = () => setProjects(loadProjects());
-    window.addEventListener("projects-updated", onUpdate);
-    window.addEventListener("storage", onUpdate);
+    let mounted = true;
+    fetchProjects()
+      .then((list) => {
+        if (mounted) {
+          setProjects(list);
+          setHydrated(true);
+        }
+      })
+      .catch(() => {
+        if (mounted) setHydrated(true);
+      });
+    const onUpdate = () => reload();
+    window.addEventListener(EVENT, onUpdate);
     return () => {
-      window.removeEventListener("projects-updated", onUpdate);
-      window.removeEventListener("storage", onUpdate);
+      mounted = false;
+      window.removeEventListener(EVENT, onUpdate);
     };
+  }, [reload]);
+
+  const create = useCallback(async (input: ProjectInput): Promise<Project> => {
+    const r = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!r.ok) throw new Error("failed to create project");
+    const created = (await r.json()) as Project;
+    setProjects((prev) => [created, ...prev]);
+    window.dispatchEvent(new CustomEvent(EVENT));
+    return created;
   }, []);
 
-  const create = useCallback((input: ProjectInput): Project => {
-    const list = loadProjects();
-    const now = new Date().toISOString();
-    const next: Project = {
-      ...input,
-      estimateAmount: input.estimateAmount ?? 0,
-      invoiceAmount: input.invoiceAmount ?? 0,
-      id: generateId(),
-      projectNumber: nextProjectNumber(list),
-      createdAt: now,
-      updatedAt: now,
-    };
-    saveProjects([next, ...list]);
-    return next;
-  }, []);
+  const update = useCallback(
+    async (id: string, input: Partial<ProjectInput>): Promise<Project | null> => {
+      const r = await fetch(`/api/projects/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!r.ok) return null;
+      const updated = (await r.json()) as Project;
+      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      window.dispatchEvent(new CustomEvent(EVENT));
+      return updated;
+    },
+    []
+  );
 
-  const update = useCallback((id: string, input: Partial<ProjectInput>): Project | null => {
-    const list = loadProjects();
-    const idx = list.findIndex((p) => p.id === id);
-    if (idx === -1) return null;
-    const next: Project = {
-      ...list[idx],
-      ...input,
-      updatedAt: new Date().toISOString(),
-    };
-    const newList = [...list];
-    newList[idx] = next;
-    saveProjects(newList);
-    return next;
-  }, []);
-
-  const remove = useCallback((id: string) => {
-    const list = loadProjects();
-    saveProjects(list.filter((p) => p.id !== id));
+  const remove = useCallback(async (id: string): Promise<void> => {
+    const r = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    if (!r.ok) return;
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    window.dispatchEvent(new CustomEvent(EVENT));
   }, []);
 
   return { projects, hydrated, create, update, remove };

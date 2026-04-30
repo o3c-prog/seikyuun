@@ -3,112 +3,74 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Document, DocumentItem, DocumentType, TaxRate } from "./types";
 
-const STORAGE_KEY = "invoice-app:documents";
+const EVENT = "documents-updated";
 
-function loadAll(): Document[] {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as Document[];
-    // Migrate legacy documentNumber like "QT-00001" → "00001"
-    let changed = false;
-    const migrated = parsed.map((d) => {
-      const stripped = (d.documentNumber ?? "").replace(/^[A-Za-z]+-/, "");
-      if (stripped !== d.documentNumber) {
-        changed = true;
-        return { ...d, documentNumber: stripped };
-      }
-      return d;
-    });
-    if (changed) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-    }
-    return migrated;
-  } catch {
-    return [];
-  }
-}
-
-function saveAll(documents: Document[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
-  window.dispatchEvent(new CustomEvent("documents-updated"));
-}
-
-function generateId(prefix = "d"): string {
+function generateId(prefix = "i"): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function nextDocumentNumber(documents: Document[], type: DocumentType): string {
-  const existing = documents
-    .filter((d) => d.type === type)
-    .map((d) => d.documentNumber)
-    .map((n) => parseInt(n.replace(/^[^\d]+/, ""), 10))
-    .filter((n) => !Number.isNaN(n));
-  const max = existing.length > 0 ? Math.max(...existing) : 0;
-  return String(max + 1).padStart(5, "0");
+async function fetchDocument(
+  projectId: string,
+  type: DocumentType
+): Promise<Document> {
+  const r = await fetch(`/api/documents/${projectId}/${type}`, {
+    cache: "no-store",
+  });
+  if (!r.ok) throw new Error("failed to fetch document");
+  return r.json();
+}
+
+async function putDocument(
+  projectId: string,
+  type: DocumentType,
+  body: Partial<Document>
+): Promise<Document> {
+  const r = await fetch(`/api/documents/${projectId}/${type}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("failed to save document");
+  return r.json();
 }
 
 export function useDocument(projectId: string, type: DocumentType) {
   const [document, setDocument] = useState<Document | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  const load = useCallback(() => {
-    const all = loadAll();
-    const found = all.find((d) => d.projectId === projectId && d.type === type);
-    if (found) {
-      setDocument(found);
-    } else {
-      const now = new Date().toISOString();
-      const fresh: Document = {
-        id: generateId(),
-        projectId,
-        type,
-        documentNumber: nextDocumentNumber(all, type),
-        subject: "",
-        primaryDate: new Date().toISOString().slice(0, 10),
-        secondaryDate: undefined,
-        notes: "",
-        status: "draft",
-        items: [],
-        createdAt: now,
-        updatedAt: now,
-      };
-      setDocument(fresh);
+  const load = useCallback(async () => {
+    try {
+      setDocument(await fetchDocument(projectId, type));
+    } catch (e) {
+      console.error(e);
     }
   }, [projectId, type]);
 
   useEffect(() => {
-    load();
-    setHydrated(true);
+    let mounted = true;
+    fetchDocument(projectId, type)
+      .then((doc) => {
+        if (mounted) {
+          setDocument(doc);
+          setHydrated(true);
+        }
+      })
+      .catch(() => {
+        if (mounted) setHydrated(true);
+      });
     const onUpdate = () => load();
-    window.addEventListener("documents-updated", onUpdate);
-    window.addEventListener("storage", onUpdate);
+    window.addEventListener(EVENT, onUpdate);
     return () => {
-      window.removeEventListener("documents-updated", onUpdate);
-      window.removeEventListener("storage", onUpdate);
+      mounted = false;
+      window.removeEventListener(EVENT, onUpdate);
     };
-  }, [load]);
+  }, [projectId, type, load]);
 
   const save = useCallback(
-    (next: Document) => {
-      const all = loadAll();
-      const idx = all.findIndex(
-        (d) => d.projectId === projectId && d.type === type
-      );
-      const updated: Document = {
-        ...next,
-        updatedAt: new Date().toISOString(),
-      };
-      const newList = [...all];
-      if (idx === -1) {
-        newList.push(updated);
-      } else {
-        newList[idx] = updated;
-      }
-      saveAll(newList);
+    async (next: Document): Promise<Document> => {
+      const updated = await putDocument(projectId, type, next);
       setDocument(updated);
+      window.dispatchEvent(new CustomEvent(EVENT));
       return updated;
     },
     [projectId, type]
@@ -117,98 +79,48 @@ export function useDocument(projectId: string, type: DocumentType) {
   return { document, hydrated, save };
 }
 
-export function copyAndIssueDocument(
+export async function copyAndIssueDocument(
   fromProjectId: string,
   fromType: DocumentType,
   toType: DocumentType
-): boolean {
-  const all = loadAll();
-  const from = all.find(
-    (d) => d.projectId === fromProjectId && d.type === fromType
-  );
+): Promise<boolean> {
+  const from = await fetchDocument(fromProjectId, fromType);
   if (!from || from.items.length === 0) return false;
   const newItems: DocumentItem[] = from.items.map((item) => ({
     ...item,
     id: generateId("i"),
   }));
-  const targetIdx = all.findIndex(
-    (d) => d.projectId === fromProjectId && d.type === toType
-  );
-  const now = new Date().toISOString();
-  if (targetIdx === -1) {
-    const fresh: Document = {
-      id: generateId(),
-      projectId: fromProjectId,
-      type: toType,
-      documentNumber: nextDocumentNumber(all, toType),
-      subject: from.subject,
-      primaryDate: now.slice(0, 10),
-      secondaryDate: undefined,
-      notes: from.notes,
-      status: "issued",
-      items: newItems,
-      createdAt: now,
-      updatedAt: now,
-    };
-    saveAll([...all, fresh]);
-  } else {
-    const updated: Document = {
-      ...all[targetIdx],
-      items: newItems,
-      status: "issued",
-      updatedAt: now,
-    };
-    const newList = [...all];
-    newList[targetIdx] = updated;
-    saveAll(newList);
-  }
+  const target = await fetchDocument(fromProjectId, toType);
+  await putDocument(fromProjectId, toType, {
+    ...target,
+    subject: target.subject || from.subject,
+    notes: target.notes || from.notes,
+    items: newItems,
+    status: "issued",
+  });
+  window.dispatchEvent(new CustomEvent(EVENT));
   return true;
 }
 
-export function copyItemsBetweenDocuments(
+export async function copyItemsBetweenDocuments(
   fromProjectId: string,
   fromType: DocumentType,
   toProjectId: string,
   toType: DocumentType
-): boolean {
-  const all = loadAll();
-  const from = all.find((d) => d.projectId === fromProjectId && d.type === fromType);
+): Promise<boolean> {
+  const from = await fetchDocument(fromProjectId, fromType);
   if (!from || from.items.length === 0) return false;
-  const targetIdx = all.findIndex(
-    (d) => d.projectId === toProjectId && d.type === toType
-  );
+  const target = await fetchDocument(toProjectId, toType);
   const newItems: DocumentItem[] = from.items.map((item) => ({
     ...item,
     id: generateId("i"),
   }));
-  if (targetIdx === -1) {
-    const now = new Date().toISOString();
-    const fresh: Document = {
-      id: generateId(),
-      projectId: toProjectId,
-      type: toType,
-      documentNumber: nextDocumentNumber(all, toType),
-      subject: from.subject,
-      primaryDate: new Date().toISOString().slice(0, 10),
-      secondaryDate: undefined,
-      notes: from.notes ?? "",
-      status: "draft",
-      items: newItems,
-      createdAt: now,
-      updatedAt: now,
-    };
-    saveAll([...all, fresh]);
-  } else {
-    const updated = {
-      ...all[targetIdx],
-      items: newItems,
-      notes: from.notes ?? all[targetIdx].notes,
-      updatedAt: new Date().toISOString(),
-    };
-    const newList = [...all];
-    newList[targetIdx] = updated;
-    saveAll(newList);
-  }
+  await putDocument(toProjectId, toType, {
+    ...target,
+    notes: from.notes ?? target.notes,
+    items: newItems,
+  });
+  window.dispatchEvent(new CustomEvent(EVENT));
   return true;
 }
 

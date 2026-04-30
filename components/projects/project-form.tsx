@@ -166,7 +166,7 @@ export function ProjectForm({ project }: { project?: Project }) {
   const { create, update } = useProjects();
   const { clients } = useClients();
 
-  const activeClients = clients.filter((c) => !c.isArchived);
+  const activeClients = clients;
 
   const {
     register,
@@ -202,22 +202,26 @@ export function ProjectForm({ project }: { project?: Project }) {
   const invoiceTimingValue = watch("invoiceTiming");
   const splitDatesValue = watch("splitInvoiceDates") ?? [];
 
-  const submit = (v: FormValues, then: "list" | "documents") => {
+  const submit = async (v: FormValues, then: "list" | "documents") => {
     const input = valuesToInput(v);
-    let id: string;
-    if (project) {
-      update(project.id, input);
-      id = project.id;
-      toast.success("更新しました");
-    } else {
-      const created = create(input);
-      id = created.id;
-      toast.success("登録しました");
-    }
-    if (then === "documents") {
-      router.push(`/projects/${id}/documents/estimate`);
-    } else {
-      router.push("/projects");
+    try {
+      let id: string;
+      if (project) {
+        await update(project.id, input);
+        id = project.id;
+        toast.success("更新しました");
+      } else {
+        const created = await create(input);
+        id = created.id;
+        toast.success("登録しました");
+      }
+      if (then === "documents") {
+        router.push(`/projects/${id}/documents/estimate`);
+      } else {
+        router.push("/projects");
+      }
+    } catch {
+      toast.error("保存に失敗しました");
     }
   };
 

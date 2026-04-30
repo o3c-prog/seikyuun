@@ -160,16 +160,20 @@ export function ClientForm({ client }: { client?: Client }) {
     name: "contacts",
   });
 
-  const onSubmit = (v: FormValues) => {
+  const onSubmit = async (v: FormValues) => {
     const input = valuesToInput(v);
-    if (client) {
-      update(client.id, input);
-      toast.success("更新しました");
-    } else {
-      create(input);
-      toast.success("登録しました");
+    try {
+      if (client) {
+        await update(client.id, input);
+        toast.success("更新しました");
+      } else {
+        await create(input);
+        toast.success("登録しました");
+      }
+      router.push("/clients");
+    } catch {
+      toast.error("保存に失敗しました");
     }
-    router.push("/clients");
   };
 
   return (
