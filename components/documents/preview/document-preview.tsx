@@ -426,7 +426,7 @@ export function DocumentPreview({
             <td className="border border-gray-300 bg-gray-300 px-2 py-1 text-center font-semibold">
               合計
             </td>
-            <td className="border border-gray-300 bg-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
+            <td className="border border-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
               {yen(totals.total)}
             </td>
           </tr>
