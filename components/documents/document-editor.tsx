@@ -100,6 +100,8 @@ export function DocumentEditor({
   const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
   const dateConfig = DOCUMENT_DATE_CONFIG[type];
   const titleLabel = DOCUMENT_TITLE_PREFIX[type];
+  // PDF retains the 御 prefix; the editor UI uses the bare title.
+  const editorTitle = titleLabel.replace(/^御/, "");
 
   const currentBranch = currentBranchId
     ? branches.find((b) => b.id === currentBranchId) ?? null
@@ -397,7 +399,7 @@ export function DocumentEditor({
           project={project}
           client={client}
           dateConfig={dateConfig}
-          docTypeLabel={titleLabel}
+          docTypeLabel={editorTitle}
           onChange={updateField}
         />
 
@@ -409,7 +411,7 @@ export function DocumentEditor({
                 <span className="flex size-7 items-center justify-center rounded-lg bg-primary-soft text-primary-soft-foreground">
                   <FileText className="size-4" />
                 </span>
-                <h2 className="text-base font-bold">{titleLabel}内容</h2>
+                <h2 className="text-base font-bold">{editorTitle}内容</h2>
               </div>
               {type !== "estimate" && (
                 <button
@@ -424,24 +426,19 @@ export function DocumentEditor({
             </header>
 
             {/* Template */}
-            <div className="mb-3 flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
-              <span className="w-28 shrink-0 text-xs font-semibold text-foreground">
-                {titleLabel}テンプレート
-              </span>
-              <div className="flex flex-1 items-center gap-2">
-                <TemplateField
-                  docType={type}
-                  currentItems={draft.items}
-                  currentNotes={draft.notes}
-                  onApply={(items) =>
-                    setDraft((d) =>
-                      d
-                        ? { ...d, items: items.map((it) => ({ ...it })) }
-                        : d
-                    )
-                  }
-                />
-              </div>
+            <div className="mb-3">
+              <TemplateField
+                docType={type}
+                currentItems={draft.items}
+                currentNotes={draft.notes}
+                onApply={(items) =>
+                  setDraft((d) =>
+                    d
+                      ? { ...d, items: items.map((it) => ({ ...it })) }
+                      : d
+                  )
+                }
+              />
             </div>
 
             {/* Items table */}
