@@ -284,7 +284,7 @@ export function DocumentPreview({
             <div className="flex w-24 items-center justify-center bg-gray-900 px-2 py-1.5 text-[11px] font-semibold text-white">
               合計金額
             </div>
-            <div className="flex flex-1 items-baseline justify-between bg-white px-3 py-1.5">
+            <div className="flex flex-1 items-baseline justify-center gap-2 bg-white px-3 py-1.5">
               <span>
                 <span className="text-xl font-bold tabular-nums">
                   {yen(template === "estimate" ? totals.subtotal : totals.total)}
