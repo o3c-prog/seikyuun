@@ -281,7 +281,7 @@ export function DocumentPreview({
           </table>
 
           <div className="mt-2 flex items-stretch border border-gray-400">
-            <div className="flex w-24 items-center justify-center bg-gray-100 px-2 py-1.5 text-[11px] font-semibold">
+            <div className="flex w-24 items-center justify-center bg-gray-300 px-2 py-1.5 text-[11px] font-semibold">
               合計金額
             </div>
             <div className="flex flex-1 items-baseline justify-between bg-white px-3 py-1.5">
@@ -343,7 +343,7 @@ export function DocumentPreview({
       {/* Items table */}
       <table className="mt-3 w-full border-collapse text-[11px]">
         <thead>
-          <tr className="border-y border-gray-400 bg-gray-100">
+          <tr className="border-y border-gray-400 bg-gray-900 text-white">
             <th className="px-1.5 py-1 text-center font-semibold">摘要</th>
             <th className="w-12 px-1.5 py-1 text-center font-semibold">数量</th>
             <th className="w-20 px-1.5 py-1 text-center font-semibold">単価</th>
@@ -354,8 +354,8 @@ export function DocumentPreview({
           {itemsWithSub.map((item) => {
             if (item.rowType === "heading") {
               return (
-                <tr key={item.id} className="border-b border-gray-100 bg-gray-100">
-                  <td colSpan={4} className="px-1.5 py-1.5">
+                <tr key={item.id} className="border-b border-gray-100 bg-gray-300">
+                  <td colSpan={4} className="px-1.5 py-1.5 font-semibold">
                     {item.name}
                   </td>
                 </tr>
@@ -412,10 +412,10 @@ export function DocumentPreview({
             </td>
           </tr>
           <tr>
-            <td className="border border-gray-400 bg-gray-100 px-2 py-1 text-center">
+            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-center font-semibold">
               合計
             </td>
-            <td className="border border-gray-400 px-2 py-1 text-right tabular-nums">
+            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
               {yen(totals.total)}
             </td>
           </tr>
