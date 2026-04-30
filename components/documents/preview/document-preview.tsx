@@ -285,8 +285,11 @@ export function DocumentPreview({
               合計金額
             </div>
             <div className="flex flex-1 items-baseline justify-between bg-white px-3 py-1.5">
-              <span className="text-xl font-bold tabular-nums">
-                {yen(template === "estimate" ? totals.subtotal : totals.total)}
+              <span>
+                <span className="text-xl font-bold tabular-nums">
+                  {yen(template === "estimate" ? totals.subtotal : totals.total)}
+                </span>
+                <span className="ml-1 text-sm font-bold">円</span>
               </span>
               <span className="text-[10px]">
                 （{template === "estimate" ? "税抜" : "税込"}）
