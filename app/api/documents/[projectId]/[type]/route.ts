@@ -91,6 +91,18 @@ export async function PUT(
     status: body.status ?? "draft",
   };
 
+  // Compute totals from the incoming items so we can sync the
+  // project's estimate/invoice amount columns shown on the list.
+  let subtotal = 0;
+  let tax = 0;
+  for (const it of items) {
+    if (it.rowType === "heading" || it.rowType === "subtotal") continue;
+    const amount = Math.floor((it.quantity ?? 1) * (it.unitPrice ?? 0));
+    subtotal += amount;
+    tax += Math.floor((amount * (it.taxRate ?? 10)) / 100);
+  }
+  const total = subtotal + tax;
+
   // Wrap in transaction to update items atomically
   const updated = await prisma.$transaction(async (tx) => {
     const doc = existing
@@ -112,6 +124,23 @@ export async function PUT(
         })),
       });
     }
+
+    // Mirror the document's total onto the parent project so the
+    // project list columns can show 見積額 / 請求額 without joining.
+    // Estimate uses subtotal (税抜) to match the PDF box; invoice uses
+    // total (税込).
+    if (type === "estimate") {
+      await tx.project.update({
+        where: { id: projectId },
+        data: { estimateAmount: subtotal },
+      });
+    } else if (type === "invoice") {
+      await tx.project.update({
+        where: { id: projectId },
+        data: { invoiceAmount: total },
+      });
+    }
+
     return tx.document.findUnique({
       where: { id: doc.id },
       include: { items: { orderBy: { sortOrder: "asc" } } },
