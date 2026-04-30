@@ -297,7 +297,7 @@ export function DocumentPreview({
 
         {/* Right: issuer */}
         <div className="text-[10px] leading-snug">
-          <table className="mb-2 ml-auto text-[10px]">
+          <table className="mb-2 ml-auto w-48 text-[10px]">
             <tbody>
               <tr>
                 <td className="w-16 bg-gray-300 px-1.5 py-1.5 text-gray-900">No</td>
@@ -314,7 +314,7 @@ export function DocumentPreview({
             </tbody>
           </table>
 
-          <div className="relative mt-3 text-right leading-[1.7]">
+          <div className="relative ml-auto mt-3 w-48 text-left leading-[1.7]">
             <div className="text-sm font-bold">{issuer.name}</div>
             {issuer.representative && (
               <div className="mt-0.5 text-[11px]">{issuer.representative}</div>
@@ -340,7 +340,7 @@ export function DocumentPreview({
               />
             )}
             {config.showStamp && template !== "invoice" && (
-              <div className="mt-2 ml-auto flex size-10 items-center justify-center rounded border border-gray-400 text-[10px] text-gray-500">
+              <div className="mt-2 flex size-10 items-center justify-center rounded border border-gray-400 text-[10px] text-gray-500">
                 印
               </div>
             )}
@@ -420,10 +420,10 @@ export function DocumentPreview({
             </td>
           </tr>
           <tr>
-            <td className="border border-gray-400 bg-gray-900 px-2 py-1 text-center font-semibold text-white">
+            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-center font-semibold">
               合計
             </td>
-            <td className="border border-gray-400 bg-gray-900 px-2 py-1 text-right font-semibold tabular-nums text-white">
+            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
               {yen(totals.total)}
             </td>
           </tr>
