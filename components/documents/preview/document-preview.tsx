@@ -280,7 +280,7 @@ export function DocumentPreview({
             </tbody>
           </table>
 
-          <div className="mt-2 flex items-stretch border border-gray-400">
+          <div className="mt-2 flex items-stretch border-2 border-gray-400">
             <div className="flex w-24 items-center justify-center bg-gray-900 px-2 py-1.5 text-[11px] font-semibold text-white">
               合計金額
             </div>
@@ -354,7 +354,7 @@ export function DocumentPreview({
       {/* Items table */}
       <table className="mt-3 w-full border-collapse text-[11px]">
         <thead>
-          <tr className="border-y border-gray-400 bg-gray-300">
+          <tr className="border-y border-gray-300 bg-gray-300">
             <th className="px-1.5 py-1 text-center font-semibold">摘要</th>
             <th className="w-12 px-1.5 py-1 text-center font-semibold">数量</th>
             <th className="w-20 px-1.5 py-1 text-center font-semibold">単価</th>
@@ -407,26 +407,26 @@ export function DocumentPreview({
       <table className="mt-2 ml-auto w-60 border-collapse text-[11px]">
         <tbody>
           <tr>
-            <td className="w-20 border border-gray-400 bg-gray-100 px-2 py-1 text-center">
+            <td className="w-20 border border-gray-300 bg-gray-100 px-2 py-1 text-center">
               小計
             </td>
-            <td className="border border-gray-400 px-2 py-1 text-right tabular-nums">
+            <td className="border border-gray-300 px-2 py-1 text-right tabular-nums">
               {yen(totals.subtotal)}
             </td>
           </tr>
           <tr>
-            <td className="border border-gray-400 bg-gray-100 px-2 py-1 text-center">
+            <td className="border border-gray-300 bg-gray-100 px-2 py-1 text-center">
               消費税
             </td>
-            <td className="border border-gray-400 px-2 py-1 text-right tabular-nums">
+            <td className="border border-gray-300 px-2 py-1 text-right tabular-nums">
               {yen(totals.tax)}
             </td>
           </tr>
           <tr>
-            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-center font-semibold">
+            <td className="border border-gray-300 bg-gray-300 px-2 py-1 text-center font-semibold">
               合計
             </td>
-            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
+            <td className="border border-gray-300 bg-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
               {yen(totals.total)}
             </td>
           </tr>
