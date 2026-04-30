@@ -139,6 +139,8 @@ export function ClientForm({ client }: { client?: Client }) {
     register,
     handleSubmit,
     control,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -154,6 +156,33 @@ export function ClientForm({ client }: { client?: Client }) {
           tags: "",
         },
   });
+
+  const lookupPostalCode = async () => {
+    const raw = getValues("postalCode") ?? "";
+    const zip = raw.replace(/[^0-9]/g, "");
+    if (zip.length !== 7) {
+      toast.error("郵便番号は 7 桁で入力してください");
+      return;
+    }
+    try {
+      const r = await fetch(
+        `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zip}`
+      );
+      const data = await r.json();
+      const hit = data?.results?.[0];
+      if (!hit) {
+        toast.error("該当する住所が見つかりませんでした");
+        return;
+      }
+      setValue("prefecture", hit.address1 ?? "", { shouldDirty: true });
+      setValue("city", `${hit.address2 ?? ""}${hit.address3 ?? ""}`, {
+        shouldDirty: true,
+      });
+      toast.success("住所を自動入力しました");
+    } catch {
+      toast.error("住所検索に失敗しました");
+    }
+  };
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -215,12 +244,23 @@ export function ClientForm({ client }: { client?: Client }) {
         <FormSection icon={MapPin} title="住所・連絡先">
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="郵便番号">
-              <Input
-                {...register("postalCode")}
-                placeholder="100-0001"
-                className="h-10"
-              />
+              <div className="flex gap-2">
+                <Input
+                  {...register("postalCode")}
+                  placeholder="100-0001"
+                  className="h-10"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={lookupPostalCode}
+                  className="h-10 shrink-0 px-3 text-xs"
+                >
+                  自動入力
+                </Button>
+              </div>
             </Field>
+            <div className="hidden md:block" />
             <Field label="都道府県">
               <Controller
                 control={control}
@@ -252,6 +292,7 @@ export function ClientForm({ client }: { client?: Client }) {
                 }}
               />
             </Field>
+            <div className="hidden md:block" />
             <Field label="市区町村・番地" className="md:col-span-2">
               <Input
                 {...register("city")}
