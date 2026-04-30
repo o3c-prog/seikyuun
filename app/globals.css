@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* base-ui sets data-checked="" / data-disabled="" attributes.
+   Tailwind v3's `data-*:` variant requires registered values, so
+   apply explicit CSS rules for the checked/disabled states. */
+@layer components {
+  [data-slot="radio-group-item"][data-checked] {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+  [data-slot="checkbox"][data-checked] {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+  [data-slot="radio-group-indicator"][data-unchecked] {
+    display: none;
+  }
+  [data-slot="checkbox-indicator"][data-unchecked] {
+    display: none;
+  }
+  [data-slot="select-item"][data-disabled] {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  [data-slot="switch"][data-checked] {
+    background-color: var(--primary);
+  }
+  [data-slot="switch-thumb"][data-checked] {
+    transform: translateX(18px);
+  }
+}
+
+/* PDF / print page styles */
+@page {
+  size: A4;
+  margin: 0;
+}
+.pdf-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 12mm 12mm;
+  background: white;
+  color: #000000;
+  font-size: 8.5pt;
+  line-height: 1.35;
+  margin: 0 auto 12mm auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+@media print {
+  .pdf-page {
+    padding: 12mm 12mm;
+  }
+}
+.pdf-page * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.pdf-page + .pdf-page {
+  page-break-before: always;
+}
+@media print {
+  html,
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm;
+  }
+  .pdf-print-controls,
+  .pdf-screen-only {
+    display: none !important;
+  }
+  .pdf-page {
+    width: 210mm;
+    height: 297mm;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 18mm 16mm;
+    box-shadow: none;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .pdf-page + .pdf-page {
+    page-break-before: always;
+  }
+  /* Avoid the wrapper background/padding from creating extra paint */
+  .pdf-screen-wrap {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: #f7f7fb;
+    --foreground: #1a1b25;
+    --card: #ffffff;
+    --card-foreground: #1a1b25;
+    --popover: #ffffff;
+    --popover-foreground: #1a1b25;
+
+    /* Brand (violet) */
+    --primary: #7c5cfa;
+    --primary-foreground: #ffffff;
+    --primary-soft: #f1edff;
+    --primary-soft-foreground: #5b3fd0;
+
+    /* Secondary / muted neutrals */
+    --secondary: #f1f2f7;
+    --secondary-foreground: #1a1b25;
+    --muted: #f4f4f8;
+    --muted-foreground: #6b6c7c;
+    --accent: #f1edff;
+    --accent-foreground: #5b3fd0;
+
+    /* Status */
+    --success: #16a34a;
+    --success-soft: #dcfce7;
+    --warning: #f59e0b;
+    --warning-soft: #fef3c7;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+
+    /* Lines / inputs */
+    --border: #e8e8ef;
+    --input: #e8e8ef;
+    --ring: #7c5cfa;
+
+    /* Charts */
+    --chart-1: #7c5cfa;
+    --chart-2: #34d399;
+    --chart-3: #fbbf24;
+    --chart-4: #f472b6;
+    --chart-5: #60a5fa;
+
+    --radius: 0.85rem;
+
+    /* Sidebar */
+    --sidebar: #ffffff;
+    --sidebar-foreground: #1a1b25;
+    --sidebar-primary: #7c5cfa;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f1edff;
+    --sidebar-accent-foreground: #5b3fd0;
+    --sidebar-border: #ececf3;
+    --sidebar-ring: #7c5cfa;
+  }
+  .dark {
+    --background: #14141b;
+    --foreground: #ededf0;
+    --card: #1d1d27;
+    --card-foreground: #ededf0;
+    --popover: #1d1d27;
+    --popover-foreground: #ededf0;
+    --primary: #8b6dff;
+    --primary-foreground: #14141b;
+    --primary-soft: #2a2148;
+    --primary-soft-foreground: #c4b5fd;
+    --secondary: #232432;
+    --secondary-foreground: #ededf0;
+    --muted: #232432;
+    --muted-foreground: #9b9caf;
+    --accent: #2a2148;
+    --accent-foreground: #c4b5fd;
+    --success: #4ade80;
+    --success-soft: #14532d;
+    --warning: #fbbf24;
+    --warning-soft: #422006;
+    --destructive: #f87171;
+    --destructive-foreground: #14141b;
+    --border: #2a2b38;
+    --input: #2a2b38;
+    --ring: #8b6dff;
+    --sidebar: #1d1d27;
+    --sidebar-foreground: #ededf0;
+    --sidebar-primary: #8b6dff;
+    --sidebar-primary-foreground: #14141b;
+    --sidebar-accent: #2a2148;
+    --sidebar-accent-foreground: #c4b5fd;
+    --sidebar-border: #2a2b38;
+    --sidebar-ring: #8b6dff;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "palt", "cv02", "cv03", "cv04", "cv11";
+  }
+  html {
+    @apply font-sans;
+  }
+}

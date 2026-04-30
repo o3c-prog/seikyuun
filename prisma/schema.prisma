@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  name           String
+  shortName      String    @map("short_name")
+  honorific      String    @default("御中")
+  postalCode     String?   @map("postal_code")
+  address        String?
+  tel            String?
+  fax            String?
+  email          String?
+  contactName    String?   @map("contact_name")
+  contactDept    String?   @map("contact_dept")
+  paymentTerms   String?   @map("payment_terms")
+  bankAccountId  String?   @map("bank_account_id")
+  sendMethod     String    @default("email") @map("send_method")
+  invoiceNumber  String?   @map("invoice_number")
+  notes          String?
+  isArchived     Boolean   @default(false) @map("is_archived")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  projects       Project[]
+  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@map("clients")
+}
+
+model Project {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  clientId       String    @map("client_id")
+  name           String
+  contactName    String?   @map("contact_name")
+  orderStatus    String    @default("estimate_mid") @map("order_status")
+  invoiceTiming  String    @default("single") @map("invoice_timing")
+  invoiceDate    DateTime? @map("invoice_date") @db.Date
+  paymentDueDate DateTime? @map("payment_due_date") @db.Date
+  paymentTerms   String?   @map("payment_terms")
+  bankAccountId  String?   @map("bank_account_id")
+  categoryTag    String?   @map("category_tag")
+  internalMemo   String?   @map("internal_memo")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  client         Client    @relation(fields: [clientId], references: [id])
+  documents      Document[]
+  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@map("projects")
+}
+
+model Document {
+  id              String    @id @default(uuid())
+  projectId       String    @map("project_id")
+  userId          String    @map("user_id")
+  docType         String    @map("doc_type")  // estimate / invoice / receipt
+  docNumber       String    @map("doc_number")
+  issuedAt        DateTime  @map("issued_at") @db.Date
+  dueDate         DateTime? @map("due_date") @db.Date
+  subject         String?
+  notes           String?
+  clientSnapshot  Json      @map("client_snapshot")
+  subtotal        Int       @default(0)
+  taxAmount       Int       @default(0)
+  totalAmount     Int       @default(0)
+  withholdingTax  Int       @default(0) @map("withholding_tax")
+  invoiceStatus   String    @default("draft") @map("invoice_status") // draft / sent / paid
+  sentAt          DateTime? @map("sent_at")
+  paidAt          DateTime? @map("paid_at") @db.Date
+  invoiceEligible Boolean   @default(true) @map("invoice_eligible")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  project         Project   @relation(fields: [projectId], references: [id])
+  groups          DocumentGroup[]
+  items           DocumentItem[]
+
+  @@map("documents")
+}
+
+model DocumentGroup {
+  id          String    @id @default(uuid())
+  documentId  String    @map("document_id")
+  name        String
+  sortOrder   Int       @map("sort_order")
+
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  items       DocumentItem[]
+
+  @@map("document_groups")
+}
+
+model DocumentItem {
+  id          String    @id @default(uuid())
+  documentId  String    @map("document_id")
+  groupId     String?   @map("group_id")
+  name        String
+  quantity    Decimal   @default(1)
+  unit        String    @default("式")
+  unitPrice   Int       @map("unit_price")
+  taxRate     Int       @default(10) @map("tax_rate")
+  amount      Int
+  notes       String?
+  sortOrder   Int       @map("sort_order")
+
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  group       DocumentGroup? @relation(fields: [groupId], references: [id])
+
+  @@map("document_items")
+}
+
+model BankAccount {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  bankName      String    @map("bank_name")
+  branchName    String?   @map("branch_name")
+  accountType   String?   @map("account_type")
+  accountNumber String?   @map("account_number")
+  accountName   String?   @map("account_name")
+  isDefault     Boolean   @default(false) @map("is_default")
+
+  clients       Client[]
+  projects      Project[]
+
+  @@map("bank_accounts")
+}
