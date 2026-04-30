@@ -182,7 +182,6 @@ export default function ProjectsPage() {
                   <TableHead className="w-[130px]">受注</TableHead>
                   <TableHead className="w-[100px]">進捗</TableHead>
                   <TableHead className="w-[120px] text-right">見積額</TableHead>
-                  <TableHead className="w-[120px] text-right">請求額</TableHead>
                   <TableHead className="w-[110px]">請求日</TableHead>
                   <TableHead className="w-[140px] pr-6 text-right">操作</TableHead>
                 </TableRow>
@@ -190,13 +189,13 @@ export default function ProjectsPage() {
               <TableBody>
                 {!hydrated ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                       読み込み中...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center">
+                    <TableCell colSpan={8} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Inbox className="size-8 opacity-50" />
                         <span className="text-sm">該当する案件がありません</span>
@@ -237,11 +236,6 @@ export default function ProjectsPage() {
                         <TableCell className="text-right font-mono text-sm tabular-nums">
                           {p.estimateAmount > 0
                             ? p.estimateAmount.toLocaleString("ja-JP")
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm tabular-nums">
-                          {p.invoiceAmount > 0
-                            ? p.invoiceAmount.toLocaleString("ja-JP")
                             : "-"}
                         </TableCell>
                         <TableCell className="text-sm tabular-nums">
