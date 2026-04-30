@@ -243,12 +243,12 @@ export function DocumentPreview({
           <table className="mt-2 w-full text-[10px]">
             <tbody>
               <tr>
-                <td className="w-16 bg-gray-100 px-1.5 py-1.5 align-top text-gray-900">件名</td>
+                <td className="w-16 bg-gray-300 px-1.5 py-1.5 align-top text-gray-900">件名</td>
                 <td className="px-1.5 py-1.5 align-top">{document.subject || project.name}</td>
               </tr>
               {config.showPaymentDeadline ? (
                 <tr>
-                  <td className="bg-gray-100 px-1.5 py-1.5 align-top text-gray-900">支払期限</td>
+                  <td className="bg-gray-300 px-1.5 py-1.5 align-top text-gray-900">支払期限</td>
                   <td className="px-1.5 py-1.5 align-top">
                     {document.secondaryDate ? formatDateJp(document.secondaryDate) : "—"}
                   </td>
@@ -256,24 +256,24 @@ export function DocumentPreview({
               ) : (
                 <>
                   <tr>
-                    <td className="bg-gray-100 px-1.5 py-1.5 align-top text-gray-900">納期</td>
+                    <td className="bg-gray-300 px-1.5 py-1.5 align-top text-gray-900">納期</td>
                     <td className="px-1.5 py-1.5 align-top">別途ご相談</td>
                   </tr>
                   <tr>
-                    <td className="bg-gray-100 px-1.5 py-1.5 align-top text-gray-900">支払条件</td>
+                    <td className="bg-gray-300 px-1.5 py-1.5 align-top text-gray-900">支払条件</td>
                     <td className="px-1.5 py-1.5 align-top">{project.paymentTerms ?? "—"}</td>
                   </tr>
                 </>
               )}
               {config.showExpiry && document.secondaryDate && (
                 <tr>
-                  <td className="bg-gray-100 px-1.5 py-1.5 align-top text-gray-900">有効期限</td>
+                  <td className="bg-gray-300 px-1.5 py-1.5 align-top text-gray-900">有効期限</td>
                   <td className="px-1.5 py-1.5 align-top">{formatDateJp(document.secondaryDate)}</td>
                 </tr>
               )}
               {config.showBankAccount && company.bankAccount && (
                 <tr>
-                  <td className="bg-gray-100 px-1.5 py-1.5 align-top text-gray-900">振込先</td>
+                  <td className="bg-gray-300 px-1.5 py-1.5 align-top text-gray-900">振込先</td>
                   <td className="px-1.5 py-1.5 align-top whitespace-pre-line">{company.bankAccount}</td>
                 </tr>
               )}
@@ -281,7 +281,7 @@ export function DocumentPreview({
           </table>
 
           <div className="mt-2 flex items-stretch border border-gray-400">
-            <div className="flex w-24 items-center justify-center bg-gray-300 px-2 py-1.5 text-[11px] font-semibold">
+            <div className="flex w-24 items-center justify-center bg-gray-900 px-2 py-1.5 text-[11px] font-semibold text-white">
               合計金額
             </div>
             <div className="flex flex-1 items-baseline justify-between bg-white px-3 py-1.5">
@@ -300,11 +300,11 @@ export function DocumentPreview({
           <table className="mb-2 ml-auto text-[10px]">
             <tbody>
               <tr>
-                <td className="w-16 bg-gray-100 px-1.5 py-1.5 text-gray-900">No</td>
+                <td className="w-16 bg-gray-300 px-1.5 py-1.5 text-gray-900">No</td>
                 <td className="px-1.5 py-1.5">{document.documentNumber}</td>
               </tr>
               <tr>
-                <td className="bg-gray-100 px-1.5 py-1.5 text-gray-900">{config.dateLabel}</td>
+                <td className="bg-gray-300 px-1.5 py-1.5 text-gray-900">{config.dateLabel}</td>
                 <td className="px-1.5 py-1.5">
                   {document.primaryDate
                     ? formatDateJp(document.primaryDate)
@@ -343,7 +343,7 @@ export function DocumentPreview({
       {/* Items table */}
       <table className="mt-3 w-full border-collapse text-[11px]">
         <thead>
-          <tr className="border-y border-gray-400 bg-gray-900 text-white">
+          <tr className="border-y border-gray-400 bg-gray-300">
             <th className="px-1.5 py-1 text-center font-semibold">摘要</th>
             <th className="w-12 px-1.5 py-1 text-center font-semibold">数量</th>
             <th className="w-20 px-1.5 py-1 text-center font-semibold">単価</th>
@@ -354,7 +354,7 @@ export function DocumentPreview({
           {itemsWithSub.map((item) => {
             if (item.rowType === "heading") {
               return (
-                <tr key={item.id} className="border-b border-gray-100 bg-gray-300">
+                <tr key={item.id} className="border-b border-gray-100 bg-gray-100">
                   <td colSpan={4} className="px-1.5 py-1.5 font-semibold">
                     {item.name}
                   </td>
@@ -412,10 +412,10 @@ export function DocumentPreview({
             </td>
           </tr>
           <tr>
-            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-center font-semibold">
+            <td className="border border-gray-400 bg-gray-900 px-2 py-1 text-center font-semibold text-white">
               合計
             </td>
-            <td className="border border-gray-400 bg-gray-300 px-2 py-1 text-right font-semibold tabular-nums">
+            <td className="border border-gray-400 bg-gray-900 px-2 py-1 text-right font-semibold tabular-nums text-white">
               {yen(totals.total)}
             </td>
           </tr>
