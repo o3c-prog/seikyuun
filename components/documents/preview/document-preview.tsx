@@ -336,7 +336,7 @@ export function DocumentPreview({
               <img
                 src="/stamp.png"
                 alt="印"
-                className="pointer-events-none absolute -right-1 top-2 size-16 select-none"
+                className="pointer-events-none absolute right-16 top-2 size-16 select-none"
               />
             )}
             {config.showStamp && template !== "invoice" && (
