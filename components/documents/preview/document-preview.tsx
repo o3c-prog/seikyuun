@@ -103,7 +103,7 @@ const TEMPLATE_CONFIG: Record<
     showExpiry: false,
     showPaymentDeadline: true,
     showBankAccount: true,
-    showStamp: false,
+    showStamp: true,
     customerIsIssuer: false,
   },
   receipt: {
@@ -331,7 +331,15 @@ export function DocumentPreview({
                 <div>登録番号：{issuer.registrationNumber}</div>
               )}
             </div>
-            {config.showStamp && (
+            {config.showStamp && template === "invoice" && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/stamp.png"
+                alt="印"
+                className="pointer-events-none absolute -right-1 top-2 size-16 select-none"
+              />
+            )}
+            {config.showStamp && template !== "invoice" && (
               <div className="mt-2 ml-auto flex size-10 items-center justify-center rounded border border-gray-400 text-[10px] text-gray-500">
                 印
               </div>
